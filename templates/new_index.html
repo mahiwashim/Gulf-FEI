@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gulf FEI RAG System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .query-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .query-input {
+            width: 100%;
+            min-height: 120px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 16px;
+            resize: vertical;
+            margin-bottom: 15px;
+            background: white;
+            color: #333;
+        }
+
+        .query-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .query-input::placeholder {
+            color: #666;
+            font-style: italic;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            flex: 1;
+        }
+
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            display: none;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .result h3 {
+            color: #333;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .answer-content {
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .sources {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .sources h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .source-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .source-tag {
+            background: #667eea;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 14px;
+        }
+
+        .fcm-table {
+            margin-bottom: 30px;
+        }
+
+        .fcm-table table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .fcm-table th {
+            background: #667eea;
+            color: white;
+            padding: 15px;
+            text-align: left;
+        }
+
+        .fcm-table td {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .fcm-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .polarity-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .polarity-positive {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .polarity-negative {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .plot-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .plot-container img,
+        .plot-container embed {
+            max-width: 100%;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        /* ── Adjacency Matrix ─────────────────────────────────────── */
+        .matrix-section {
+            margin-top: 10px;
+        }
+
+        .matrix-info {
+            color: #555;
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        .matrix-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: 420px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 6px;
+        }
+
+        .adj-matrix {
+            border-collapse: collapse;
+            font-size: 12px;
+            white-space: nowrap;
+            width: 100%;
+        }
+
+        .adj-matrix th {
+            background: #667eea;
+            color: white;
+            padding: 7px 10px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid #5566d6;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        /* row-header sticky left */
+        .adj-matrix tbody th {
+            background: #4a5acd;
+            color: white;
+            padding: 6px 10px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #3a4ab0;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            white-space: nowrap;
+        }
+
+        /* top-left corner cell */
+        .adj-matrix thead th:first-child {
+            background: #3a4ab0;
+            left: 0;
+            z-index: 3;
+        }
+
+        .adj-matrix td {
+            padding: 6px 10px;
+            border: 1px solid #dee2e6;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .positive-cell {
+            background: #d4edda;
+            color: #155724;
+            font-weight: 700;
+        }
+
+        .negative-cell {
+            background: #f8d7da;
+            color: #721c24;
+            font-weight: 700;
+        }
+
+        .zero-cell {
+            color: #bbb;
+        }
+
+        .download-btn {
+            background: linear-gradient(45deg, #27ae60, #1a8a4a);
+            color: white;
+            border: none;
+            padding: 10px 26px;
+            border-radius: 22px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.22s ease;
+            margin-top: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(39,174,96,0.40);
+        }
+
+        .error-box {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .examples {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+        }
+
+        .examples h5 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .example-btn {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .query-section {
+                padding: 20px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .fcm-table table {
+                font-size: 14px;
+            }
+
+            .fcm-table th,
+            .fcm-table td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐟 Gulf FEI RAG System</h1>
+            <p>Ask questions about NOAA's ecosystem-based fisheries management in the Gulf of Mexico</p>
+        </div>
+
+        <div class="query-section">
+            <h2 style="color: #333; margin-bottom: 20px;">🔍 Research Query</h2>
+
+            <form id="query-form">
+                <textarea
+                    class="query-input"
+                    id="query"
+                    placeholder="Type your question here... (e.g., How does fishing effort affect bycatch in the Gulf?)"
+                    maxlength="600"
+                    required
+                ></textarea>
+
+                <div class="controls">
+                    <div class="slider-container">
+                        <label for="max_edges">FCM Relations: <span id="edge_value" class="slider-value">5</span></label>
+                        <input
+                            type="range"
+                            class="slider"
+                            id="max_edges"
+                            name="max_edges"
+                            min="3"
+                            max="15"
+                            value="5"
+                        />
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submit-btn">
+                        <i class="fas fa-search"></i> Analyze
+                    </button>
+                </div>
+            </form>
+
+            <div class="examples">
+                <h5>💡 Quick Examples:</h5>
+                <button class="example-btn" data-query="Explain NOAA's ecosystem-based fisheries management framework in the Gulf of Mexico">EBFM Framework</button>
+                <button class="example-btn" data-query="What are the climate impacts on Gulf shrimp fisheries?">Climate & Shrimp</button>
+                <button class="example-btn" data-query="Compare SEDAR red snapper assessment with EBFM approach">Red Snapper SEDAR</button>
+                <button class="example-btn" data-query="How does fishing effort affect bycatch rates?">Fishing Effort & Bycatch</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <h4>🔬 Analyzing your query...</h4>
+            <p>This may take 30-60 seconds for the first request</p>
+        </div>
+
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById('query-form');
+        const queryInput = document.getElementById('query');
+        const loading = document.getElementById('loading');
+        const resultDiv = document.getElementById('result');
+        const submitBtn = document.getElementById('submit-btn');
+        const maxEdgesSlider = document.getElementById('max_edges');
+        const edgeValue = document.getElementById('edge_value');
+
+        maxEdgesSlider.addEventListener('input', () => {
+            edgeValue.textContent = maxEdgesSlider.value;
+        });
+
+        document.querySelectorAll('.example-btn').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                queryInput.value = btn.dataset.query;
+                form.requestSubmit();
+            });
+        });
+
+        const escapeHtml = (str = '') => str
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = queryInput.value.trim();
+            const maxEdges = maxEdgesSlider.value;
+
+            if (!query) {
+                alert('Please enter a question first!');
+                queryInput.focus();
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            loading.style.display = 'block';
+            resultDiv.style.display = 'none';
+            resultDiv.innerHTML = '';
+
+            try {
+                const response = await fetch('/query', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({ query, max_edges: maxEdges }),
+                });
+
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                // Build result HTML
+                let html = `
+                    <h3>📄 Research Answer</h3>
+                    <div class="answer-content">${marked.parse(data.answer || 'No answer generated.')}</div>
+
+                    <div class="sources">
+                        <h4>📚 Sources</h4>
+                        <div class="source-tags">
+                            ${data.sources && data.sources.length > 0
+                                ? data.sources.map(src => `<span class="source-tag">${escapeHtml(src)}</span>`).join('')
+                                : '<span class="source-tag">No sources available</span>'}
+                        </div>
+                    </div>
+
+                    <h3>🔗 Causal Relationships (FCM)</h3>
+                    <div class="fcm-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Cause</th>
+                                    <th>Effect</th>
+                                    <th>Polarity</th>
+                                    <th>Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.fcm_edge_results && data.fcm_edge_results.length > 0
+                                    ? data.fcm_edge_results.map(edge => `
+                                        <tr>
+                                            <td>${edge.result}</td>
+                                            <td>${escapeHtml(edge.cause)}</td>
+                                            <td><i class="fas fa-arrow-right text-primary"></i> ${escapeHtml(edge.effect)}</td>
+                                            <td><span class="polarity-badge polarity-${edge.polarity === '+' ? 'positive' : 'negative'}">${edge.polarity}</span></td>
+                                            <td><code>${edge.weight}</code></td>
+                                        </tr>
+                                    `).join('')
+                                    : '<tr><td colspan="5">No causal relationships found</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                if (data.plot_path) {
+                    const isSvg = data.plot_path.endsWith('.svg');
+                    html += `
+                        <h3>📊 FCM Network Visualization</h3>
+                        <div class="plot-container">
+                            ${isSvg
+                                ? `<embed src="${escapeHtml(data.plot_path)}" type="image/svg+xml" width="800" height="600" />`
+                                : `<img src="${escapeHtml(data.plot_path)}" alt="FCM Network Graph" />`}
+                        </div>
+                    `;
+                }
+
+                // ── Adjacency Matrix ──────────────────────────────────
+                if (data.adjacency_matrix && data.matrix_concepts && data.matrix_concepts.length > 0) {
+                    const concepts = data.matrix_concepts;
+                    const matrix   = data.adjacency_matrix;
+
+                    // Store globally for CSV download
+                    window.matrixData = { concepts, matrix };
+
+                    // Build <thead>
+                    let thead = '<thead><tr><th></th>';
+                    concepts.forEach(c => { thead += `<th title="${escapeHtml(c)}">${escapeHtml(c)}</th>`; });
+                    thead += '</tr></thead>';
+
+                    // Build <tbody>
+                    let tbody = '<tbody>';
+                    for (let i = 0; i < concepts.length; i++) {
+                        tbody += `<tr><th>${escapeHtml(concepts[i])}</th>`;
+                        for (let j = 0; j < concepts.length; j++) {
+                            const val = matrix[i] ? (matrix[i][j] || 0) : 0;
+                            let cls = 'zero-cell', display = '0';
+                            if (val > 0)      { cls = 'positive-cell'; display = val.toFixed(3); }
+                            else if (val < 0) { cls = 'negative-cell'; display = val.toFixed(3); }
+                            tbody += `<td class="${cls}">${display}</td>`;
+                        }
+                        tbody += '</tr>';
+                    }
+                    tbody += '</tbody>';
+
+                    html += `
+                        <h3>🔢 Adjacency Matrix</h3>
+                        <div class="matrix-section">
+                            <p class="matrix-info">
+                                <strong>${concepts.length} × ${concepts.length}</strong> matrix &nbsp;|&nbsp;
+                                <span style="color:#155724;font-weight:700">■ Positive</span> &nbsp;
+                                <span style="color:#721c24;font-weight:700">■ Negative</span> &nbsp;
+                                <span style="color:#aaa">0 = no direct influence</span>
+                            </p>
+                            <div class="matrix-container">
+                                <table class="adj-matrix">${thead}${tbody}</table>
+                            </div>
+                            <div style="text-align:center">
+                                <button class="download-btn" onclick="downloadMatrix()">
+                                    ⬇️ Download Adjacency Matrix (CSV)
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                resultDiv.innerHTML = html;
+                resultDiv.style.display = 'block';
+
+                // Scroll to results
+                resultDiv.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (err) {
+                console.error('Query error:', err);
+                resultDiv.innerHTML = `
+                    <div class="error-box">
+                        <h4><i class="fas fa-exclamation-triangle"></i> Error Processing Query</h4>
+                        <p><strong>Details:</strong> ${escapeHtml(err.message || 'Unknown error')}</p>
+                        <p><strong>Troubleshooting:</strong></p>
+                        <ul>
+                            <li>Try a simpler question</li>
+                            <li>Check your internet connection</li>
+                            <li>Wait a moment and try again</li>
+                            <li>Check browser console (F12) for more details</li>
+                        </ul>
+                    </div>
+                `;
+                resultDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-search"></i> Analyze';
+            }
+        });
+        // ── Adjacency Matrix CSV download ─────────────────────────
+        function downloadMatrix() {
+            if (!window.matrixData) return;
+            const { concepts, matrix } = window.matrixData;
+
+            // Header row
+            let csv = ',' + concepts.map(c => '"' + c.replace(/"/g, '""') + '"').join(',') + '\n';
+
+            // Data rows
+            for (let i = 0; i < concepts.length; i++) {
+                const row = '"' + concepts[i].replace(/"/g, '""') + '"';
+                const vals = matrix[i]
+                    ? matrix[i].map(v => (v !== 0 ? v.toFixed(3) : '0')).join(',')
+                    : Array(concepts.length).fill('0').join(',');
+                csv += row + ',' + vals + '\n';
+            }
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = 'fcm_adjacency_matrix.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
